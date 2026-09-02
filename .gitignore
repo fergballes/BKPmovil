@@ -14,4 +14,4 @@ dist/
 htmlcov/
 .idea/
 .vscode/
-vendor/adb*
+vendor/

@@ -1,0 +1,54 @@
+BKPmovil — copia de seguridad de tu móvil Android
+=================================================
+
+QUÉ HACE
+  Copia al ordenador, por WiFi y sin cables, las fotos y vídeos del móvil:
+  la cámara, las capturas, las descargas y también las fotos y vídeos que
+  están dentro de las carpetas de WhatsApp y Telegram.
+
+  La primera vez lo copia todo. A partir de ahí solo trae lo nuevo, así que
+  las siguientes copias tardan muchísimo menos.
+
+
+CÓMO SE INSTALA
+---------------
+
+  WINDOWS
+    · Si has descargado el instalador (BKPmovil-…-instalador.exe):
+      ábrelo, pulsa Siguiente y deja marcada la casilla del acceso directo
+      en el Escritorio. Windows puede avisar de que el programa no está
+      firmado: pulsa "Más información" y "Ejecutar de todas formas".
+
+    · Si has descargado el .zip: descomprímelo donde quieras y ejecuta
+      BKPmovil.exe. Para tenerlo a mano, botón derecho sobre BKPmovil.exe →
+      "Enviar a" → "Escritorio (crear acceso directo)".
+
+  LINUX
+    · Descomprime el .tar.gz, entra en la carpeta BKPmovil y ejecuta:
+          ./instalar.sh
+      Eso lo deja en el menú de aplicaciones y crea el acceso directo en el
+      Escritorio. También puedes ejecutar ./BKPmovil directamente.
+
+
+CÓMO SE USA
+-----------
+  1. Abre BKPmovil y sigue la guía de la izquierda: elige tu marca de móvil
+     y ve haciendo lo que dice. Solo hay que hacerlo entero la primera vez.
+  2. Escribe la IP y el puerto que te enseña el móvil y pulsa "Conectar".
+  3. Elige la carpeta del ordenador donde guardar la copia y marca lo que
+     quieras copiar.
+  4. Pulsa "HACER COPIA DE SEGURIDAD" y espera. Deja el móvil desbloqueado.
+
+  La copia queda en una carpeta con la fecha del día, así:
+      bkp_02092026
+
+
+LO QUE NO SE PUEDE COPIAR
+-------------------------
+  El historial de chats de WhatsApp NO se puede copiar de esta manera:
+  Android lo guarda en una zona protegida a la que ningún programa puede
+  llegar sin "rootear" el móvil. Las fotos, vídeos y audios de WhatsApp SÍ
+  se copian. Para los chats, usa la copia de seguridad del propio WhatsApp.
+
+  Tampoco se copian los contactos, los SMS ni los datos internos del resto
+  de aplicaciones.
