@@ -80,6 +80,11 @@ def human_size(num_bytes: float) -> str:
     return f"{value:.1f} TB"
 
 
+def miles(cantidad: int) -> str:
+    """Número con el separador de miles en castellano: 12345 -> '12.345'."""
+    return f"{cantidad:,}".replace(",", ".")
+
+
 def human_duration(seconds: float) -> str:
     """Duración legible en castellano."""
     seconds = max(0, int(seconds))

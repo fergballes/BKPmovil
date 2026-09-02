@@ -28,9 +28,9 @@ from PySide6.QtWidgets import (
 
 from ..adb import Adb
 from ..config import Config
-from ..discovery import dir_exists, list_files
+from ..discovery import dir_exists, list_files, unique_dest
 from ..index import BackupIndex
-from ..localfs import free_space, human_size
+from ..localfs import free_space, human_size, miles
 from ..paths import FILTER_SETS, ResolvedSource
 from .workers import DiscoverWorker
 
@@ -42,11 +42,14 @@ FILTROS = [
 
 
 class AddFolderDialog(QDialog):
-    """Añadir a mano una carpeta del móvil que no se haya detectado."""
+    """Añadir o editar a mano una carpeta del móvil."""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, inicial: dict | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Añadir una carpeta del móvil")
+        editando = bool(inicial)
+        self.setWindowTitle(
+            "Editar la carpeta" if editando else "Añadir una carpeta del móvil"
+        )
         self.setMinimumWidth(460)
         layout = QVBoxLayout(self)
         layout.addWidget(
@@ -74,6 +77,13 @@ class AddFolderDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+        if inicial:
+            self.path_edit.setText(str(inicial.get("root", "")))
+            self.name_edit.setText(str(inicial.get("dest_name", "")))
+            indice = self.filter_combo.findData(inicial.get("filter_key", "todo"))
+            if indice >= 0:
+                self.filter_combo.setCurrentIndex(indice)
 
     def values(self) -> dict:
         path = self.path_edit.text().strip().rstrip("/")
@@ -140,6 +150,7 @@ class FoldersPage(QWidget):
             ("Marcar todas", lambda: self._set_all(True)),
             ("Desmarcar todas", lambda: self._set_all(False)),
             ("Añadir carpeta…", self._add_custom),
+            ("Editar carpeta", self._edit_custom),
             ("Quitar carpeta", self._remove_custom),
         ):
             button = QPushButton(text)
@@ -161,6 +172,7 @@ class FoldersPage(QWidget):
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         table.itemChanged.connect(self._on_item_changed)
+        table.itemDoubleClicked.connect(lambda item: self._edit_custom(item.row()))
         return table
 
     def _build_footer(self) -> QWidget:
@@ -239,7 +251,7 @@ class FoldersPage(QWidget):
         self._compute_pending()
         self._fill_table()
         total = sum(s.file_count for s in sources)
-        self.status.setText(f"{len(sources)} carpetas encontradas · {total:,} ficheros".replace(",", "."))
+        self.status.setText(f"{len(sources)} carpetas encontradas · {miles(total)} ficheros")
 
     def _compute_pending(self) -> None:
         index = BackupIndex.for_device(self.serial, self.model)
@@ -272,9 +284,9 @@ class FoldersPage(QWidget):
             self.table.setItem(row, 0, name)
 
             for column, text in (
-                (1, f"{nuevos:,}".replace(",", ".")),
+                (1, miles(nuevos)),
                 (2, human_size(bytes_nuevos)),
-                (3, f"{source.file_count:,}".replace(",", ".") + f"  ·  {human_size(source.total_bytes)}"),
+                (3, f"{miles(source.file_count)}  ·  {human_size(source.total_bytes)}"),
                 (4, source.root),
             ):
                 item = QTableWidgetItem(text)
@@ -321,9 +333,8 @@ class FoldersPage(QWidget):
         if libre and octetos > libre:
             aviso = f"  ⚠ No cabe: quedan {human_size(libre)} libres"
         self.summary.setText(
-            f"{len(selected)} carpetas · {ficheros:,} ficheros · {human_size(octetos)}{aviso}".replace(
-                ",", "."
-            )
+            f"{len(selected)} carpetas · {miles(ficheros)} ficheros · "
+            f"{human_size(octetos)}{aviso}"
         )
         self.go_button.setEnabled(bool(selected) and ficheros > 0)
         if selected and ficheros == 0:
@@ -332,13 +343,43 @@ class FoldersPage(QWidget):
     # -- carpetas personalizadas ------------------------------------------
 
     def _add_custom(self) -> None:
+        self._custom_dialog()
+
+    def _edit_custom(self, row: int | None = None) -> None:
+        fila = self.table.currentRow() if row is None else row
+        if not 0 <= fila < len(self.sources):
+            return
+        fuente = self.sources[fila]
+        if not fuente.custom:
+            QMessageBox.information(
+                self,
+                "No se puede editar",
+                "Solo se pueden editar las carpetas que hayas añadido tú.\n"
+                "Para no copiar una de las demás, basta con desmarcarla.",
+            )
+            return
+        self._custom_dialog(fuente)
+
+    def _custom_dialog(self, editando: ResolvedSource | None = None) -> None:
+        """Alta o edición de una carpeta puesta a mano por el usuario."""
         if not self.serial:
             QMessageBox.information(self, "Falta conectar", "Conecta antes con el móvil.")
             return
-        dialog = AddFolderDialog(self)
+
+        inicial = (
+            {
+                "root": editando.root,
+                "dest_name": editando.dest_name,
+                "filter_key": editando.filter_key,
+            }
+            if editando
+            else None
+        )
+        dialog = AddFolderDialog(self, inicial)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         values = dialog.values()
+
         if not values["root"].startswith("/"):
             QMessageBox.warning(
                 self, "Ruta no válida", "La ruta debe empezar por / — por ejemplo /sdcard/Notas."
@@ -351,18 +392,49 @@ class FoldersPage(QWidget):
                 f"En el móvil no hay ninguna carpeta llamada:\n{values['root']}",
             )
             return
+
+        # Si esa carpeta ya está en la lista, no se duplica: se marca la que hay.
+        ya_esta = next(
+            (
+                f
+                for f in self.sources
+                if f.root == values["root"] and (editando is None or f is not editando)
+            ),
+            None,
+        )
+        if ya_esta is not None and not ya_esta.custom:
+            QMessageBox.information(
+                self,
+                "Esa carpeta ya está",
+                f"«{ya_esta.dest_name}» ya aparece en la lista y apunta a la misma "
+                "carpeta del móvil. La he marcado para que se copie.",
+            )
+            ya_esta.enabled = True
+            self.config.set_enabled(ya_esta.key, True)
+            self._fill_table()
+            return
+
+        antigua = editando.root if editando else values["root"]
         self.config.custom_sources = [
-            c for c in self.config.custom_sources if c.get("root") != values["root"]
+            c
+            for c in self.config.custom_sources
+            if c.get("root") not in (antigua, values["root"])
         ]
         self.config.custom_sources.append(values)
         self.config.save()
 
+        ocupados = {
+            f.dest_name
+            for f in self.sources
+            if f.root not in (antigua, values["root"]) or not f.custom
+        }
         source = ResolvedSource(
             key=f"custom:{values['root']}",
             label=values["label"],
             root=values["root"],
-            dest_name=values["dest_name"],
+            dest_name=unique_dest(values["dest_name"], ocupados, values["root"]),
             filter_key=values["filter_key"],
+            enabled=editando.enabled if editando else True,
             custom=True,
         )
         self.status.setText(f"Analizando {source.dest_name}…")
@@ -371,6 +443,11 @@ class FoldersPage(QWidget):
         )
         source.file_count = len(source.files)
         source.total_bytes = sum(f.size for f in source.files if f.size > 0)
+
+        # Sustituye la que se estaba editando, o cualquier otra con la misma ruta.
+        self.sources = [
+            s for s in self.sources if s.root not in (antigua, values["root"]) or not s.custom
+        ]
         self.sources.append(source)
         self._compute_pending()
         self._fill_table()

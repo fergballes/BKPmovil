@@ -166,6 +166,10 @@ def movil(tmp_path: Path) -> Path:
     escribir(base, "WhatsApp/Media/WhatsApp Images/viejo.jpg", b"antiguo" * 70)
     escribir(base, "Telegram/Telegram Images/tg.jpg", b"telegram" * 45)
 
+    # Carpeta suelta, de las que el usuario añade a mano.
+    escribir(base, "Notas de voz/nota-1.m4a", b"nota" * 40)
+    escribir(base, "Notas de voz/foto-nota.jpg", b"foto nota" * 20)
+
     escribir(base, ".thumbnails/basura.jpg", b"basura")
     return base
 

@@ -141,3 +141,193 @@ def test_navegacion_entre_pasos(ventana):
     ventana._go(1)
     ventana._back()
     assert ventana.stack.currentIndex() == 0
+
+
+@pytest.fixture
+def carpetas_analizadas(ventana, qt_app):
+    """Página 2 ya analizada, lista para tocar las carpetas personalizadas."""
+    pagina = ventana.folders_page
+    pagina.set_device("192.168.1.50:41233", "Redmi Note 8")
+    pagina.analyze()
+    pagina._worker.wait(30000)
+    qt_app.processEvents()
+    return pagina
+
+
+def _dialogo_falso(monkeypatch, valores: dict, aceptar: bool = True):
+    """Sustituye el diálogo por uno que devuelve los valores indicados."""
+    from PySide6.QtWidgets import QDialog, QMessageBox
+
+    import bkpmovil.ui.page_folders as modulo
+
+    class DialogoFalso:
+        def __init__(self, parent=None, inicial=None):
+            self.inicial = inicial
+
+        def exec(self):
+            return (
+                QDialog.DialogCode.Accepted if aceptar else QDialog.DialogCode.Rejected
+            )
+
+        def values(self):
+            return dict(valores)
+
+    monkeypatch.setattr(modulo, "AddFolderDialog", DialogoFalso)
+    monkeypatch.setattr(QMessageBox, "warning", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+
+
+def test_anadir_una_carpeta_del_movil(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    antes = len(pagina.sources)
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/Notas de voz",
+            "label": "Mis notas",
+            "dest_name": "Mis notas",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+
+    assert len(pagina.sources) == antes + 1
+    nueva = pagina.sources[-1]
+    assert nueva.custom and nueva.dest_name == "Mis notas"
+    assert nueva.file_count > 0
+    assert pagina.config.custom_sources[-1]["root"] == "/sdcard/Notas de voz"
+
+
+def test_no_se_admite_una_ruta_que_no_existe(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    antes = len(pagina.sources)
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/NoExisteNada",
+            "label": "x",
+            "dest_name": "x",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+    assert len(pagina.sources) == antes
+
+
+def test_editar_una_carpeta_no_la_duplica(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/Notas de voz",
+            "label": "Mis notas",
+            "dest_name": "Mis notas",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+    total = len(pagina.sources)
+    fila = len(pagina.sources) - 1
+
+    # Se edita: mismo sitio, otro nombre y solo fotos y vídeos.
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/Notas de voz",
+            "label": "Papeles",
+            "dest_name": "Papeles",
+            "filter_key": "media",
+            "enabled": True,
+        },
+    )
+    pagina._edit_custom(fila)
+
+    assert len(pagina.sources) == total  # no se ha duplicado
+    editada = next(s for s in pagina.sources if s.root == "/sdcard/Notas de voz")
+    assert editada.dest_name == "Papeles"
+    assert editada.filter_key == "media"
+    rutas = [c["root"] for c in pagina.config.custom_sources]
+    assert rutas.count("/sdcard/Notas de voz") == 1
+
+
+def test_no_se_pueden_editar_ni_quitar_las_carpetas_detectadas(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    antes = len(pagina.sources)
+    _dialogo_falso(monkeypatch, {})
+    pagina.table.setCurrentCell(0, 0)
+    pagina._edit_custom(0)
+    pagina._remove_custom()
+    assert len(pagina.sources) == antes
+
+
+def test_quitar_una_carpeta_anadida(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/Notas de voz",
+            "label": "Mis notas",
+            "dest_name": "Mis notas",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+    fila = len(pagina.sources) - 1
+    pagina.table.setCurrentCell(fila, 0)
+    pagina._remove_custom()
+
+    assert all(s.root != "/sdcard/Notas de voz" for s in pagina.sources)
+    assert all(c["root"] != "/sdcard/Notas de voz" for c in pagina.config.custom_sources)
+
+
+def test_anadir_una_carpeta_que_ya_estaba_no_la_duplica(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    antes = len(pagina.sources)
+    documentos = next(f for f in pagina.sources if f.dest_name == "Documents")
+    documentos.enabled = False
+
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": documentos.root,
+            "label": "Otra vez documentos",
+            "dest_name": "Otra vez documentos",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+
+    assert len(pagina.sources) == antes
+    assert documentos.enabled  # se marca la que ya estaba en vez de crear otra
+
+
+def test_los_nombres_de_destino_nunca_chocan(carpetas_analizadas, monkeypatch):
+    pagina = carpetas_analizadas
+    _dialogo_falso(
+        monkeypatch,
+        {
+            "root": "/sdcard/Notas de voz",
+            "label": "DCIM",  # nombre que ya usa una carpeta detectada
+            "dest_name": "DCIM",
+            "filter_key": "todo",
+            "enabled": True,
+        },
+    )
+    pagina._add_custom()
+
+    nombres = [f.dest_name for f in pagina.sources]
+    assert len(nombres) == len(set(nombres))
+
+
+def test_el_resumen_de_la_seleccion_usa_los_formatos_correctos(carpetas_analizadas):
+    """Miles con punto y decimales con coma, en la misma frase."""
+    import re
+
+    texto = carpetas_analizadas.summary.text()
+    assert re.search(r"\d+ carpetas · [\d.]+ ficheros · [\d,]+ (B|KB|MB|GB)", texto), texto
+    assert not re.search(r"\d\.\d (B|KB|MB|GB)", texto), f"decimal con punto: {texto}"

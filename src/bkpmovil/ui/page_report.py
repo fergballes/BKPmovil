@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..backup import BackupResult
-from ..localfs import human_duration, human_size, open_in_file_manager
+from ..localfs import human_duration, human_size, miles, open_in_file_manager
 from ..report import RESUMEN
 
 
@@ -128,18 +128,18 @@ class ReportPage(QWidget):
         self.subtitle.setText(detalle)
 
         self.valores["carpetas"].setText(str(len(result.folders_with_content)))
-        self.valores["ficheros"].setText(f"{result.total_copied:,}".replace(",", "."))
+        self.valores["ficheros"].setText(miles(result.total_copied))
         self.valores["tamano"].setText(human_size(result.total_bytes))
-        self.valores["omitidos"].setText(f"{result.total_skipped:,}".replace(",", "."))
+        self.valores["omitidos"].setText(miles(result.total_skipped))
         self.valores["duracion"].setText(human_duration(result.duration))
 
         self.table.setRowCount(len(result.folders))
         for row, folder in enumerate(result.folders):
             celdas = [
                 folder.dest_name,
-                f"{folder.copied:,}".replace(",", "."),
+                miles(folder.copied),
                 human_size(folder.bytes_copied),
-                f"{folder.skipped:,}".replace(",", "."),
+                miles(folder.skipped),
                 str(folder.failed),
                 folder.root,
             ]

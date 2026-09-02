@@ -84,7 +84,7 @@ bkpmovil backup  --dest "~/Copias BKPmovil" --open
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest                      # 74 pruebas, con un móvil simulado (no hace falta uno real)
+pytest                      # 87 pruebas, con un móvil simulado (no hace falta uno real)
 ruff check src tests tools
 python -m bkpmovil           # abre la ventana
 python tools/build.py        # genera el paquete distribuible en dist/
