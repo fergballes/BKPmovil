@@ -5,7 +5,8 @@ venv/
 .env
 build/
 dist/
-*.spec
+# El spec de packaging/ es fuente: se versiona.
+/*.spec
 *.egg-info/
 .pytest_cache/
 .ruff_cache/

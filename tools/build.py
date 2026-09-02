@@ -41,15 +41,23 @@ def main() -> int:
     args = parser.parse_args()
 
     if not (RAIZ / "assets" / "icono.ico").is_file():
-        ejecutar([sys.executable, "tools/build_icons.py"])
+        ejecutar([sys.executable, str(RAIZ / "tools" / "build_icons.py")])
 
     if not args.sin_adb:
-        ejecutar([sys.executable, "tools/fetch_adb.py"])
+        ejecutar([sys.executable, str(RAIZ / "tools" / "fetch_adb.py")])
 
     if not args.sin_limpiar and DIST.exists():
         shutil.rmtree(DIST)
 
-    ejecutar([sys.executable, "-m", "PyInstaller", "--noconfirm", "packaging/bkpmovil.spec"])
+    ejecutar(
+        [
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            str(RAIZ / "packaging" / "bkpmovil.spec"),
+        ]
+    )
     if not SALIDA.is_dir():
         print("PyInstaller no ha generado dist/BKPmovil", file=sys.stderr)
         return 1
