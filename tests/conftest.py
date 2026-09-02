@@ -3,6 +3,10 @@
 Las órdenes que la app manda al móvil (`find`, `stat`, `[ -d … ]`) se
 ejecutan de verdad contra esa carpeta, así que se prueba el mismo texto que
 se enviaría a un Android real, con sus mismas comillas y sus mismos parseos.
+
+Eso exige un shell POSIX con `find` y `stat`, que en Windows no hay. Allí
+estas pruebas se saltan y quedan las que sí dependen del sistema: el saneado
+de nombres de fichero, las rutas largas, la configuración y la interfaz.
 """
 
 from __future__ import annotations
@@ -119,9 +123,25 @@ def escribir(base: Path, relativa: str, contenido: bytes, mtime: int = 1_700_000
     return destino
 
 
+#: El simulador necesita un shell POSIX; en Windows no lo hay.
+#: BKPMOVIL_SIN_SHELL=1 fuerza el camino de Windows para poder probarlo.
+HAY_SHELL_POSIX = (
+    os.environ.get("BKPMOVIL_SIN_SHELL") != "1"
+    and os.name != "nt"
+    and shutil.which("find") is not None
+)
+
+requiere_shell_posix = pytest.mark.skipif(
+    not HAY_SHELL_POSIX,
+    reason="el móvil simulado necesita un shell POSIX con find y stat",
+)
+
+
 @pytest.fixture
 def movil(tmp_path: Path) -> Path:
     """Árbol representativo de un Android real."""
+    if not HAY_SHELL_POSIX:
+        pytest.skip("el móvil simulado necesita un shell POSIX con find y stat")
     base = tmp_path / "movil"
     escribir(base, "DCIM/Camera/IMG_0001.jpg", b"foto uno" * 100)
     escribir(base, "DCIM/Camera/IMG_0002.jpg", b"foto dos" * 120)
