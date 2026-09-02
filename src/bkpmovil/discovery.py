@@ -176,7 +176,7 @@ def find_app_dirs(
 # --- Resolución completa ----------------------------------------------------
 
 
-def _unique_dest(base: str, used: set[str], root: str) -> str:
+def unique_dest(base: str, used: set[str], root: str) -> str:
     if base not in used:
         used.add(base)
         return base
@@ -209,7 +209,7 @@ def resolve_standard_sources(
                         key=spec.key,
                         label=spec.label,
                         root=path,
-                        dest_name=_unique_dest(spec.dest_name, used, path),
+                        dest_name=unique_dest(spec.dest_name, used, path),
                         filter_key=spec.filter_key,
                         enabled=spec.default_enabled,
                     )
@@ -241,7 +241,7 @@ def resolve_messaging_sources(
                     key=f"{app.key}:{found}",
                     label=f"{app.label} — {found}",
                     root=found,
-                    dest_name=_unique_dest(app.dest_name, used, found),
+                    dest_name=unique_dest(app.dest_name, used, found),
                     filter_key=app.filter_key,
                     enabled=app.default_enabled,
                 )
@@ -268,7 +268,7 @@ def resolve_custom_sources(
                 key=f"custom:{path}",
                 label=str(entry.get("label") or path),
                 root=path,
-                dest_name=_unique_dest(base, used, path),
+                dest_name=unique_dest(base, used, path),
                 filter_key=str(entry.get("filter_key", "todo")),
                 enabled=bool(entry.get("enabled", True)),
                 custom=True,
@@ -329,5 +329,6 @@ __all__ = [
     "resolve_standard_sources",
     "scan_sources",
     "storage_root",
+    "unique_dest",
     "FILTER_SETS",
 ]

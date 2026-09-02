@@ -125,6 +125,9 @@ ha encontrado, cuántos ficheros hay y cuántos son nuevos desde la última vez.
 - **Marca o desmarca** carpetas con las casillas. Tu elección se recuerda.
 - **Añadir carpeta…** deja meter cualquier ruta del móvil que no se haya
   detectado, indicando si quieres todo o solo fotos y vídeos.
+- **Editar carpeta** (o doble clic sobre ella) cambia la ruta, el nombre o
+  el filtro de una que hayas añadido tú. **Quitar carpeta** la elimina. Las
+  detectadas automáticamente no se editan: basta con desmarcarlas.
 - **Copia completa** vuelve a traer también lo ya copiado. Normalmente no
   hace falta.
 - **Comprobar fichero a fichero** verifica el contenido con sha1. Es más

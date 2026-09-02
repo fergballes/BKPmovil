@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..backup import Progress
-from ..localfs import human_duration, human_size
+from ..localfs import human_duration, human_size, miles
 
 
 def _dato(titulo: str) -> tuple[QWidget, QLabel]:
@@ -143,7 +143,7 @@ class ProgressPage(QWidget):
         if progress.file_name:
             self.file_label.setText(progress.file_name)
 
-        self.valores["ficheros"].setText(f"{progress.files_done:,}".replace(",", "."))
+        self.valores["ficheros"].setText(miles(progress.files_done))
         self.valores["tamano"].setText(human_size(progress.bytes_done))
         self.valores["velocidad"].setText(
             f"{human_size(progress.speed)}/s" if progress.speed > 1000 else "—"

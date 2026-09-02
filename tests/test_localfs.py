@@ -9,6 +9,7 @@ import pytest
 from bkpmovil.localfs import (
     human_duration,
     human_size,
+    miles,
     relative_to_root,
     sanitize_component,
     sanitize_relative,
@@ -66,3 +67,16 @@ def test_unique_dir_no_pisa_carpetas(tmp_path):
     assert segunda.name == "bkp_02092026_2"
     segunda.mkdir()
     assert unique_dir(tmp_path, "bkp_02092026").name == "bkp_02092026_3"
+
+
+@pytest.mark.parametrize(
+    "cantidad,esperado", [(0, "0"), (999, "999"), (1000, "1.000"), (12797, "12.797")]
+)
+def test_miles(cantidad, esperado):
+    assert miles(cantidad) == esperado
+
+
+def test_el_separador_de_miles_no_se_come_la_coma_decimal():
+    """El resumen mezcla ambos formatos: 3.278 ficheros y 6,8 GB."""
+    texto = f"{miles(3278)} ficheros · {human_size(7_300_000_000)}"
+    assert texto == "3.278 ficheros · 6,8 GB"

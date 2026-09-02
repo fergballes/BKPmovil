@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from .backup import BackupResult
-from .localfs import human_duration, human_size
+from .localfs import human_duration, human_size, miles
 
 RESUMEN = "RESUMEN.txt"
 MANIFIESTO = "manifiesto.json"
@@ -26,18 +26,18 @@ def summary_table(result: BackupResult) -> str:
     rows = [
         [
             folder.dest_name,
-            f"{folder.copied:,}".replace(",", "."),
+            miles(folder.copied),
             human_size(folder.bytes_copied),
-            f"{folder.skipped:,}".replace(",", "."),
+            miles(folder.skipped),
             str(folder.failed),
         ]
         for folder in result.folders
     ]
     total_row = [
         "TOTAL",
-        f"{result.total_copied:,}".replace(",", "."),
+        miles(result.total_copied),
         human_size(result.total_bytes),
-        f"{result.total_skipped:,}".replace(",", "."),
+        miles(result.total_skipped),
         str(result.total_failed),
     ]
     widths = _column_widths(rows + [total_row], headers)
@@ -72,9 +72,9 @@ def summary_text(result: BackupResult) -> str:
         "",
         f"Carpetas copiadas:     {len(result.folders_with_content)}",
         f"Subcarpetas creadas:   {result.total_subdirs}",
-        f"FICHEROS COPIADOS:     {result.total_copied:,}".replace(",", "."),
+        f"FICHEROS COPIADOS:     {miles(result.total_copied)}",
         f"Tamaño copiado:        {human_size(result.total_bytes)}",
-        f"Omitidos (ya estaban): {result.total_skipped:,}".replace(",", "."),
+        f"Omitidos (ya estaban): {miles(result.total_skipped)}",
         f"Fallidos:              {result.total_failed}",
         "",
         summary_table(result),
