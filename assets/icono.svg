@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" rx="56" fill="#2563eb"/>
+  <!-- Móvil -->
+  <rect x="42" y="40" width="104" height="176" rx="16" fill="#ffffff"/>
+  <rect x="54" y="60" width="80" height="126" rx="6" fill="#dbeafe"/>
+  <rect x="80" y="196" width="28" height="6" rx="3" fill="#cbd5e1"/>
+  <!-- Flecha de copia hacia el ordenador -->
+  <path d="M150 118 h44 v-22 l30 32 -30 32 v-22 h-44 z" fill="#16a34a"/>
+  <!-- Carpeta destino -->
+  <path d="M150 150 h0" fill="none"/>
+  <g transform="translate(150,152)">
+    <path d="M6 8 h22 l7 9 h39 a8 8 0 0 1 8 8 v40 a8 8 0 0 1 -8 8 h-68 a8 8 0 0 1 -8 -8 v-49 a8 8 0 0 1 8 -8 z"
+          fill="#ffffff" opacity="0.92"/>
+  </g>
+</svg>

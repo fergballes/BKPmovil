@@ -1,5 +1,20 @@
 # BKPmovil — Plan de proyecto
 
+> **Estado: implementado.** Las fases 0 a 5 están terminadas: motor
+> incremental, interfaz de cuatro pasos, guía por fabricante, CLI completa,
+> empaquetado con instalador y publicación automática desde GitHub. Ver
+> [README.md](README.md) y [docs/GUIA.md](docs/GUIA.md).
+>
+> Cambios respecto al plan original, con su motivo:
+> - La copia se hace **fichero a fichero** en vez de por carpetas enteras.
+>   Cuesta algo de rendimiento pero es lo que hace correctos a la vez el
+>   progreso en vivo, el pausar/cancelar sin perder nada y el incremental.
+> - La reconstrucción del índice recorre **del móvil al disco**, no al revés:
+>   el saneado de nombres para Windows no es invertible, así que se aplica la
+>   misma función que usó la copia y se comprueba si el fichero está.
+> - Las carpetas de mensajería **no usan rutas fijas**: se buscan por nombre
+>   en todo el almacenamiento, porque cambian entre versiones de Android.
+
 App de escritorio para hacer copias de seguridad de un móvil Android por
 **depuración inalámbrica (ADB sobre WiFi)**, sin cables y sin root, pensada
 para uso personal y familiar.

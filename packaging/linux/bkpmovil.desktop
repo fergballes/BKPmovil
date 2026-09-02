@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=BKPmovil
+GenericName=Copia de seguridad del móvil
+Comment=Copia las fotos y vídeos del móvil Android al ordenador por WiFi
+Exec=BKPMOVIL_EXEC
+Icon=bkpmovil
+Terminal=false
+Categories=Utility;Archiving;
+Keywords=backup;copia;movil;android;fotos;whatsapp;
+StartupWMClass=BKPmovil
