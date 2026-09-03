@@ -134,9 +134,17 @@ jobs:
             formas*. Si prefieres no instalar nada, usa el `.zip` y ejecuta
             `BKPmovil.exe` directamente.
 
-            **Linux** — descarga el `.tar.gz`, descomprímelo y ejecuta
-            `./instalar.sh` dentro de la carpeta. Deja la aplicación en el menú
-            y crea el acceso directo en el Escritorio.
+            **Linux** — descarga el `.tar.gz` y, en la terminal:
+
+            ```bash
+            tar xzf BKPmovil-X.Y.Z-linux-x86_64.tar.gz
+            cd BKPmovil
+            ./instalar.sh
+            ```
+
+            Ojo con el `cd`: al descomprimir se crea la carpeta `BKPmovil` y el
+            instalador está dentro. Deja la aplicación en el menú y crea el
+            acceso directo en el Escritorio.
 
             Ambos paquetes llevan `adb` dentro: no hace falta instalar nada más.
 

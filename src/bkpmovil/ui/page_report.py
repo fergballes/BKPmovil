@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
+    QPlainTextEdit,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -154,9 +159,69 @@ class ReportPage(QWidget):
     # -- interno -----------------------------------------------------------
 
     def _open_folder(self) -> None:
-        if self.result:
-            open_in_file_manager(Path(self.result.dest))
+        if not self.result:
+            return
+        destino = Path(self.result.dest)
+        if not open_in_file_manager(destino):
+            QMessageBox.information(
+                self,
+                "No se ha podido abrir la carpeta",
+                "No se ha podido abrir el explorador de archivos. La copia está en:\n\n"
+                f"{destino}",
+            )
 
     def _open_report(self) -> None:
-        if self.result:
-            open_in_file_manager(Path(self.result.dest) / RESUMEN)
+        """Enseña el informe en una ventana propia.
+
+        No se delega en el sistema: el programa asociado a los .txt puede ser
+        un editor de terminal, que desde una aplicación de ventanas arranca sin
+        terminal a la que engancharse y no se ve nada. Además el informe lleva
+        columnas alineadas y necesita fuente monoespaciada.
+        """
+        if not self.result:
+            return
+        informe = Path(self.result.dest) / RESUMEN
+        try:
+            texto = informe.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "No se ha podido leer el informe",
+                f"No se ha podido leer {informe}.\n\n{exc}",
+            )
+            return
+
+        dialogo = QDialog(self)
+        dialogo.setWindowTitle(f"{RESUMEN} — {informe.parent.name}")
+        dialogo.resize(720, 560)
+        caja = QVBoxLayout(dialogo)
+
+        ruta = QLabel(str(informe))
+        ruta.setObjectName("subtitulo")
+        ruta.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        caja.addWidget(ruta)
+
+        visor = QPlainTextEdit(texto)
+        visor.setObjectName("informe")
+        visor.setReadOnly(True)
+        visor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        caja.addWidget(visor, 1)
+
+        botones = QDialogButtonBox()
+        copiar = botones.addButton("Copiar el texto", QDialogButtonBox.ButtonRole.ActionRole)
+        copiar.clicked.connect(lambda: self._copy_to_clipboard(texto, copiar))
+        cerrar = botones.addButton("Cerrar", QDialogButtonBox.ButtonRole.RejectRole)
+        cerrar.setObjectName("primario")
+        botones.rejected.connect(dialogo.reject)
+        caja.addWidget(botones)
+
+        dialogo.exec()
+
+    @staticmethod
+    def _copy_to_clipboard(texto: str, boton: QPushButton) -> None:
+        aplicacion = QApplication.instance()
+        if aplicacion is None:
+            return
+        aplicacion.clipboard().setText(texto)
+        boton.setText("Copiado")
+        QTimer.singleShot(1500, lambda: boton.setText("Copiar el texto"))

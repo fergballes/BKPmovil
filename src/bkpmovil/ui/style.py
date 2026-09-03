@@ -101,6 +101,10 @@ QPlainTextEdit#log {{
     font-family: "JetBrains Mono", "Consolas", "DejaVu Sans Mono", monospace;
     font-size: 12px; color: {GRIS_SUAVE};
 }}
+QPlainTextEdit#informe {{
+    font-family: "JetBrains Mono", "Consolas", "DejaVu Sans Mono", monospace;
+    font-size: 12px; color: #0f172a;
+}}
 QCheckBox::indicator {{ width: 18px; height: 18px; }}
 QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
 QScrollBar::handle:vertical {{ background: #cbd5e1; border-radius: 5px; min-height: 30px; }}
