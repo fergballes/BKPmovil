@@ -166,8 +166,8 @@ def cmd_backup(args: argparse.Namespace) -> int:
     result = engine.run()
     write_reports(result)
     print("\n" + summary_text(result))
-    if args.open:
-        open_in_file_manager(result.dest)
+    if args.open and not open_in_file_manager(result.dest):
+        print(f"No se ha podido abrir el explorador de archivos. La copia está en {result.dest}.")
     return 1 if result.total_failed else 0
 
 

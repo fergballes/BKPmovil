@@ -6,6 +6,8 @@ import os
 import posixpath
 import re
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 #: Caracteres prohibidos en nombres de fichero de Windows.
@@ -107,15 +109,80 @@ def unique_dir(parent: Path, name: str) -> Path:
     return candidate
 
 
+#: Variables del cargador dinámico que PyInstaller retoca al arrancar. Si un
+#: programa del sistema las hereda, carga nuestras bibliotecas empaquetadas en
+#: vez de las suyas y no arranca (el explorador de archivos, por ejemplo).
+_VARIABLES_DEL_CARGADOR = (
+    "LD_LIBRARY_PATH",
+    "DYLD_LIBRARY_PATH",
+    "DYLD_FRAMEWORK_PATH",
+    "LD_PRELOAD",
+)
+
+
+def _apunta_al_paquete(tramo: str, base: str) -> bool:
+    try:
+        return os.path.commonpath([os.path.realpath(tramo), base]) == base
+    except (OSError, ValueError):
+        return False
+
+
+def entorno_del_sistema() -> dict[str, str]:
+    """Entorno limpio para lanzar programas ajenos a la aplicación.
+
+    Al empaquetar con PyInstaller, el arranque mete la carpeta `_internal/` en
+    `LD_LIBRARY_PATH` y guarda el valor previo en `LD_LIBRARY_PATH_ORIG`. Aquí
+    se restaura ese valor previo; si no lo hay, se quitan solo los tramos que
+    apuntan dentro del paquete y se deja el resto intacto.
+    """
+    entorno = dict(os.environ)
+    base = getattr(sys, "_MEIPASS", None)
+    base = os.path.realpath(base) if base else None
+
+    for variable in _VARIABLES_DEL_CARGADOR:
+        original = entorno.pop(f"{variable}_ORIG", None)
+        if original is not None:
+            if original:
+                entorno[variable] = original
+            else:
+                entorno.pop(variable, None)
+            continue
+
+        actual = entorno.get(variable)
+        if not actual or not base:
+            continue
+        restos = [
+            tramo
+            for tramo in actual.split(os.pathsep)
+            if tramo and not _apunta_al_paquete(tramo, base)
+        ]
+        if restos:
+            entorno[variable] = os.pathsep.join(restos)
+        else:
+            entorno.pop(variable, None)
+
+    entorno.pop("_MEIPASS2", None)
+    return entorno
+
+
 def open_in_file_manager(path: Path) -> bool:
-    """Abre la carpeta en el explorador de archivos del sistema."""
+    """Abre la ruta con el programa que le corresponda en el sistema.
+
+    Devuelve False si no se ha podido lanzar nada, para que quien llame
+    pueda avisar en vez de quedarse callado.
+    """
     try:
         if os.name == "nt":
             os.startfile(str(path))  # type: ignore[attr-defined]
-        elif os.uname().sysname == "Darwin":
-            os.system(f'open "{path}"')
-        else:
-            os.system(f'xdg-open "{path}" >/dev/null 2>&1 &')
+            return True
+        orden = ["open" if sys.platform == "darwin" else "xdg-open", str(path)]
+        subprocess.Popen(
+            orden,
+            env=entorno_del_sistema(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
         return True
-    except Exception:
+    except (OSError, ValueError):
         return False
