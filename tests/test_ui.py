@@ -12,10 +12,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QPlainTextEdit
 
 from bkpmovil.backup import BackupResult, FolderResult, Progress
 from bkpmovil.config import Config
+from bkpmovil.report import RESUMEN
 from bkpmovil.ui.main_window import MainWindow
 from bkpmovil.ui.style import STYLESHEET, paso_html
 
@@ -132,6 +133,70 @@ def test_el_resumen_muestra_carpetas_y_ficheros(ventana):
     assert ventana.report_page.valores["carpetas"].text() == "2"
     assert ventana.report_page.valores["ficheros"].text() == "15"
     assert ventana.report_page.table.rowCount() == 3
+
+
+# -- «Ver el informe» -------------------------------------------------------
+#
+# Antes se lanzaba xdg-open sobre el RESUMEN.txt. Si el programa asociado a los
+# .txt es un editor de terminal (nvim, por ejemplo), arranca sin terminal a la
+# que engancharse: no se ve nada y queda un proceso colgado. Ahora se enseña
+# dentro de la propia aplicación.
+
+
+@pytest.fixture
+def resumen_escrito(ventana, tmp_path):
+    resultado = BackupResult(dest=tmp_path / "bkp_03092026", device="Xiaomi M2101K6G")
+    resultado.dest.mkdir()
+    (resultado.dest / RESUMEN).write_text(
+        "COPIA DE SEGURIDAD — BKPmovil\nFICHEROS COPIADOS:     389\n", encoding="utf-8"
+    )
+    ventana.report_page.show_result(resultado)
+    return resultado
+
+
+def test_ver_el_informe_no_lanza_nada_al_sistema(resumen_escrito, ventana, monkeypatch):
+    lanzados = []
+    monkeypatch.setattr(
+        "bkpmovil.ui.page_report.open_in_file_manager",
+        lambda ruta: lanzados.append(ruta) or True,
+    )
+    dialogos = []
+    monkeypatch.setattr(QDialog, "exec", lambda self: dialogos.append(self) or 0)
+
+    ventana.report_page.report_button.click()
+
+    assert not lanzados, "el informe no debe delegarse en el programa del sistema"
+    assert len(dialogos) == 1
+    visor = dialogos[0].findChild(QPlainTextEdit)
+    assert "FICHEROS COPIADOS:     389" in visor.toPlainText()
+    assert visor.isReadOnly()
+
+
+def test_ver_el_informe_avisa_si_no_se_puede_leer(resumen_escrito, ventana, monkeypatch):
+    (resumen_escrito.dest / RESUMEN).unlink()
+    avisos = []
+    monkeypatch.setattr(
+        QMessageBox, "warning", lambda *args, **kwargs: avisos.append(args[2]) or 0
+    )
+    monkeypatch.setattr(QDialog, "exec", lambda self: pytest.fail("no debe abrir el visor"))
+
+    ventana.report_page.report_button.click()
+
+    assert len(avisos) == 1
+    assert RESUMEN in avisos[0]
+
+
+def test_abrir_la_carpeta_avisa_si_el_sistema_no_puede(resumen_escrito, ventana, monkeypatch):
+    monkeypatch.setattr("bkpmovil.ui.page_report.open_in_file_manager", lambda ruta: False)
+    avisos = []
+    monkeypatch.setattr(
+        QMessageBox, "information", lambda *args, **kwargs: avisos.append(args[2]) or 0
+    )
+
+    ventana.report_page.open_button.click()
+
+    assert len(avisos) == 1
+    assert str(resumen_escrito.dest) in avisos[0]
 
 
 def test_navegacion_entre_pasos(ventana):
