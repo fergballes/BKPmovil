@@ -42,9 +42,17 @@ del acceso directo en el Escritorio. Windows avisará de que la aplicación no
 está firmada: *Más información* → *Ejecutar de todas formas*. También hay un
 `.zip` portable.
 
-**Linux** — descomprime el `.tar.gz` y ejecuta `./instalar.sh` dentro de la
-carpeta. Queda en el menú de aplicaciones y con acceso directo en el
-Escritorio.
+**Linux** — descarga `BKPmovil-X.Y.Z-linux-x86_64.tar.gz` (el de ~74 MB; el
+«Source code» que GitHub añade solo es el código sin compilar y no sirve para
+instalar). Descomprímelo, **entra en la carpeta** y ejecuta el instalador:
+
+```bash
+tar xzf BKPmovil-X.Y.Z-linux-x86_64.tar.gz
+cd BKPmovil
+./instalar.sh
+```
+
+Queda en el menú de aplicaciones y con acceso directo en el Escritorio.
 
 📖 **[Guía completa de uso](docs/GUIA.md)** — instalación, conexión paso a
 paso por marca, resolución de problemas y uso desde la terminal.

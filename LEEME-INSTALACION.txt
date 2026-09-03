@@ -24,7 +24,9 @@ CÓMO SE INSTALA
       "Enviar a" → "Escritorio (crear acceso directo)".
 
   LINUX
-    · Descomprime el .tar.gz, entra en la carpeta BKPmovil y ejecuta:
+    · Descarga BKPmovil-…-linux-x86_64.tar.gz (unos 74 MB). El "Source code"
+      que GitHub pone en la lista es el código sin compilar y no vale.
+    · Descomprímelo, entra en la carpeta BKPmovil y ejecuta:
           ./instalar.sh
       Eso lo deja en el menú de aplicaciones y crea el acceso directo en el
       Escritorio. También puedes ejecutar ./BKPmovil directamente.
