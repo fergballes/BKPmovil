@@ -24,6 +24,10 @@ quieras y ejecuta `BKPmovil.exe`. Para tenerlo a mano: botón derecho sobre
 
 ### Linux
 
+Descarga **`BKPmovil-X.Y.Z-linux-x86_64.tar.gz`**, el de unos 74 MB. Cuidado:
+GitHub añade a cada versión un «Source code (tar.gz)» de pocos KB que es el
+código sin compilar; ese no lleva instalador ni programa.
+
 ```bash
 tar xzf BKPmovil-X.Y.Z-linux-x86_64.tar.gz
 cd BKPmovil
@@ -236,6 +240,7 @@ bkpmovil rebuild-index --dest "/ruta/a/Copias BKPmovil"
 
 | Qué ves | Qué pasa |
 |---|---|
+| `./instalar.sh: No existe el fichero` (Linux) | O te has bajado el «Source code» en vez de `BKPmovil-X.Y.Z-linux-x86_64.tar.gz` (se nota en que la carpeta lleva la versión en el nombre y contiene `src/` y `pyproject.toml`), o estás fuera de la carpeta: al descomprimir el paquete bueno se crea `BKPmovil/` y hay que hacer `cd BKPmovil` antes. |
 | «No se ha podido conectar con el móvil para emparejar» | El móvil y el ordenador no están en la misma red WiFi, o has cerrado la ventana de vinculación, o has usado el puerto equivocado. |
 | Vincula bien pero no conecta | Estás usando el puerto de la ventana de vinculación en vez del de la pantalla principal. Son distintos. |
 | Conectaba y ha dejado de conectar | El puerto cambió al reiniciar el móvil o el WiFi. Míralo otra vez en el móvil. |
